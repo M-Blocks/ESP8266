@@ -1,11 +1,12 @@
 void setup() 
-{
+{ 
   pinMode(Switch, OUTPUT);
   pinMode(LED, OUTPUT); 
   digitalWrite(LED, HIGH);
   delay(100);
   digitalWrite(LED, LOW);
   Serial.begin(115200);
+  delay(500);
   Wire.begin(2, 14);
   delay(100);
   //baro.begin();
@@ -48,7 +49,7 @@ void setupWiFi()
   int begin_time = millis();
   while (status != WL_CONNECTED)
   {
-    Serial.print("Attempting to connect to SSID: ");
+    if(DEBUG){Serial.println("Attempting to connect to SSID: ");}
     //Serial.println(WiFiSSID);
     status = WiFi.begin(WiFiSSID, WiFiPSK);
     delay(200);
@@ -58,19 +59,8 @@ void setupWiFi()
           delay(40);
           break;
         }
-//        Serial.println("fbsleep");
-//        delay(200);
-//        Serial.println("fbsleep");
-//        delay(200);
-//        Serial.println("fbsleep");
-//        delay(200);
-//        Serial.println("espoff");
-//        delay(2000);
-//        Serial.println("espoff");
-//        delay(2000);
-        
   }
-  //Serial.print("Escaped first loop");
+  if(DEBUG){Serial.print("Escaped first loop");}
   if(status != WL_CONNECTED) 
   {
     setupWiFi_alternate();
@@ -83,13 +73,14 @@ void setupWiFi()
   }
   ip_address = WiFi.localIP();
   WiFi.setAutoReconnect(true);
-  //Serial.print("IP Address: ");
-  //Serial.println(ip_address);
+  if(DEBUG){Serial.print("IP Address: ");}
+  if(DEBUG){Serial.println(ip_address);}
 }
 
 void setupWiFi_alternate()
 {
-// Serial.println("Beginning wifi Alternate");
+ if(DEBUG){Serial.println("Beginning wifi Alternate");}
+ which_alternate = 0;
 //  WiFi.mode(WIFI_STA);
   long start_time = millis();
   while (status != WL_CONNECTED)
@@ -98,7 +89,7 @@ void setupWiFi_alternate()
     //Serial.println(WiFiSSID);
     status = WiFi.begin(WiFiSSID_alternate, WiFiPSK_alternate);
     delay(200);
-    if((millis() - start_time) > 10000){
+    if((millis() - start_time) > 15000){
         Serial.println("fbsleep");
         delay(200);
         Serial.println("fbsleep");

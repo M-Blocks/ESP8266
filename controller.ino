@@ -1,4 +1,4 @@
-////////////////// 2016-08-19
+////////////////// 2016-08-19-21-09-32
 #define DEBUG 0 // Setting this to 1 generates lots of debug messages
 #define USE_WIFICON
 #define LED 13
@@ -59,8 +59,8 @@ long startTime;
 long stopTime;
 long myDesiredTime;
 long initial_baro; // this will be the calibrated ofset for the barometer
-String cmd = "";
-String cmd_previous = "";
+String cmd = "chill";
+String cmd_previous = "chill";
 int face_that_was_last_up = 0; // kinda like the two below...
 int face_that_was_last_lit_up = 0; // stupid BS to avoid blinking LED's... if this is the same as before it doesn't reset
 int face_that_is_up = -1; // face that is up lists most recent face that is point up... (big surprise there!)
@@ -70,6 +70,7 @@ int vbat1 = 0; // most recently updated battery voltage
 int vbat2 = 0;
 int vbat3 = 0;
 int vbat4 = 0;
+int which_alternate = 1;
 int vbat_average = 0;
 int loop_counter = 0;
 int fast_loop_counter = 0;
@@ -82,10 +83,12 @@ Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 //////////////////////
 // WiFi Definitions //
 //////////////////////
-const char WiFiSSID[] = "TP-LINK_9B7022"; // My Router
-const char WiFiPSK[] = "279B7022"; // My Router
-const char WiFiSSID_alternate[] = "TP-LINK_9B6D90"; // Back_Up_Router
-const char WiFiPSK_alternate[] = "279B6D90"; // Back_Up_Router
+const char WiFiSSID[] = "mblocks"; // My Router
+const char WiFiPSK[] = "password"; // My Router
+
+const char WiFiSSID_alternate[] = "TP-LINK_9B7022"; // Back_Up_Router
+const char WiFiPSK_alternate[] = "279B7022"; // Back_Up_Rou
+
 int status = WL_IDLE_STATUS;
 IPAddress ip_address;
 //////////////////////
