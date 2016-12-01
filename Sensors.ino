@@ -1,12 +1,51 @@
-int get_battery_voltage(){
+  int get_battery_voltage()
+  {
+    long begin_function = millis();
+    while(Serial.available()){Serial.read();} // empty serial buffer just in case...
+    delay(3);
+    Serial.println("vbat");
+    delay(23);
+    char prev_char = ' ';
+    String temp_string = "";
+    int battery_counter = 1;
+    while (Serial.available() > 0 && (millis()-begin_function) < 60) // while there are things in the serial buffer...
+    {
+        char c = Serial.read();
+        if(c == ' ' && prev_char == ':')
+          {
+              for(int i = 0; i < 4; i++)
+                  {
+                  char a = Serial.read();
+                  delayMicroseconds(250);
+                  if(isDigit(a)){temp_string += a;}
+                  } 
+              if(battery_counter == 1){vbat[1] = temp_string.toInt();}
+              else if(battery_counter == 2){vbat[2] = temp_string.toInt();}
+              else if(battery_counter == 3){vbat[3] = temp_string.toInt();}
+              else if(battery_counter == 4){vbat[4] = temp_string.toInt();}
+              battery_counter++;
+              temp_string = ""; 
+          }
+        delayMicroseconds(200);
+        prev_char = c;
+    }
+  vbat[0] = (vbat[1]+vbat[2]+vbat[3]+vbat[4])/4;
+  return (vbat[0]);
+  
+//  Serial.print("This part of this took: ");
+//  Serial.println(millis() - begin_function);
+}
+
+int get_vin()
+{
   long begin_function = millis();
   while(Serial.available()){Serial.read();} // empty serial buffer just in case...
-  //delay(5);
-  Serial.println("vbat");
+  delay(5);
+  Serial.println("vin");
   delay(23);
-  char prev_char = ' ';
-  String temp_string = "";
-  int battery_counter = 1;
+  char prev_char      = ' ';
+  String temp_string  = "";
+  int temp_vin        = 0;
   while (Serial.available() > 0 && (millis()-begin_function) < 60) // while there are things in the serial buffer...
   {
         char c = Serial.read();
@@ -18,24 +57,16 @@ int get_battery_voltage(){
                   delayMicroseconds(250);
                   if(isDigit(a)){temp_string += a;}
                   } 
-              if(battery_counter == 1){vbat1 = temp_string.toInt();}
-              else if(battery_counter == 2){vbat2 = temp_string.toInt();}
-              else if(battery_counter == 3){vbat3 = temp_string.toInt();}
-              else if(battery_counter == 4){vbat4 = temp_string.toInt();}
-              battery_counter++;
-              temp_string = ""; 
+              temp_vin = temp_string.toInt();
+        
           }
-        delayMicroseconds(200);
+        delayMicroseconds(250);
         prev_char = c;
   }
-  vbat_average = (vbat1+vbat2+vbat3+vbat4)/4;
-  return vbat_average;
+  return(temp_vin);
 //  Serial.print("This part of this took: ");
 //  Serial.println(millis() - begin_function);
 }
-
-//int read_gyro_central()
-//... cmdIMUGyrosStr[] = "imugyros";
 
 int read_accel_central(){ 
 // Function typically takes about 30 milliseconds to complete
@@ -79,6 +110,7 @@ int read_ambient(int face)//(int face)
 {
   int reading = 0;
   digitalWrite(Switch, HIGH);
+  if(face > 6 || face < 1) {return(-1);}
   Wire.beginTransmission(face); 
   Wire.write(byte(0x10)); // this is the register where the Ambient values are stored
   Wire.endTransmission();
@@ -99,7 +131,7 @@ void wake_accel(){
   Wire.endTransmission(true);
 }
 
-bool read_accel(){
+long read_accel(){
   digitalWrite(Switch, HIGH);
   wake_accel();
   Wire.beginTransmission(MPU_addr);
@@ -113,10 +145,27 @@ bool read_accel(){
 //  GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
 //  GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
 //  GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-  return true;
+  return(abs(AcX)+abs(AcY)+abs(AcZ));
 }
 
-bool read_gyro(){
+long read_gyro_and_accel(){
+  digitalWrite(Switch, HIGH);
+  wake_accel();
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_addr,14,1);
+  AcX=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)    
+  AcY=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcZ=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  Tmp=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+  GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+  GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+  GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+  return((abs(GyX)+abs(GyY)+abs(GyZ)+abs(AcX) + abs(AcY) + abs(AcZ))/10);
+}
+
+long read_gyro(){
   digitalWrite(Switch, HIGH);
   wake_accel();
   Wire.beginTransmission(MPU_addr);
@@ -130,30 +179,20 @@ bool read_gyro(){
   GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
   GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-  return true;
+  return(abs(GyX)+abs(GyY)+abs(GyZ));
 }
-void fbrxen() // Turns on Ambient light sensor
+
+void fbrxen(bool state) // Turns on Ambient light sensor
 {
   if(DEBUG){Serial.println("Beginning FBRXEN");}
   digitalWrite(Switch, HIGH); // Takecontrol of I2C BUS
   delay(1);
-  for (int x = 1; x<=6;x++) {
-  Wire.beginTransmission(x);
+  for (int face = 1; face < 7; face++) {
+  Wire.beginTransmission(face);
   Wire.write(byte(0x43));
-  Wire.write(byte(0x01));
+  if(state) {Wire.write(byte(0x01));}
+  else      {Wire.write(byte(0x00));}
   Wire.endTransmission(); 
-  }
-}
-
-void fbrxoff() // Turns off Ambient light sensor
-{
-  digitalWrite(Switch, HIGH); // Takecontrol of I2C BUS
-  for (int x = 1; x<=6;x++) {
-  Wire.beginTransmission(x);
-  Wire.write(byte(0x43));
-  Wire.write(byte(0x00));
-  Wire.endTransmission(); 
-  digitalWrite(Switch, LOW);
   }
 }
 
